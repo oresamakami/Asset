@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('課マスタ - 資産管理')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container">
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-1"></i><span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="bi bi-diagram-3 me-2"></i>課マスタ</h2>
+        <div class="d-flex gap-2">
+            <a href="/departments" class="btn btn-outline-secondary">
+                <i class="bi bi-building me-1"></i>部署マスタ
+            </a>
+            <a href="/sections/new" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>新規登録
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th style="width:80px">ID</th>
+                    <th>課名</th>
+                    <th>所属部署</th>
+                    <th class="text-center" style="width:160px">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="sec : ${sections}">
+                    <td th:text="${sec.id}"></td>
+                    <td th:text="${sec.name}"></td>
+                    <td th:text="${sec.department.name}"></td>
+                    <td class="text-center text-nowrap">
+                        <a th:href="@{/sections/{id}/edit(id=${sec.id})}"
+                           class="btn btn-sm btn-outline-primary me-1">
+                            <i class="bi bi-pencil"></i> 編集
+                        </a>
+                        <form th:action="@{/sections/{id}/delete(id=${sec.id})}"
+                              method="post" class="d-inline"
+                              onsubmit="return confirm('この課を削除してよろしいですか？')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i> 削除
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(sections)}">
+                    <td colspan="4" class="text-center text-muted py-4">課が登録されていません</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

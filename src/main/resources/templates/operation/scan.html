@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('スキャン - 資産管理')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container" style="max-width:640px">
+    <h2 class="mb-4"><i class="bi bi-qr-code-scan me-2"></i>貸出 / 返却</h2>
+
+    <!-- ===== タブ ===== -->
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-checkout" data-bs-toggle="tab"
+                    data-bs-target="#pane-checkout" type="button">
+                <i class="bi bi-box-arrow-right me-1"></i>貸出
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-checkin" data-bs-toggle="tab"
+                    data-bs-target="#pane-checkin" type="button">
+                <i class="bi bi-box-arrow-in-left me-1"></i>返却
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+
+        <!-- ==================== 貸出タブ ==================== -->
+        <div class="tab-pane fade show active" id="pane-checkout" role="tabpanel">
+            <div class="card p-4">
+                <!-- Step 1: 社員QR -->
+                <h5 class="mb-3">Step 1: 社員QRスキャン</h5>
+                <div class="input-group mb-2">
+                    <input type="text" id="co-emp-code" class="form-control halfwidth-input"
+                           placeholder="社員番号を入力 or スキャン">
+                    <button class="btn btn-outline-primary" type="button"
+                            onclick="startScan('co-emp-code')">
+                        <i class="bi bi-qr-code-scan"></i>
+                    </button>
+                    <button class="btn btn-primary" type="button" onclick="lookupEmployee()">検索</button>
+                </div>
+                <div id="co-emp-info" class="alert alert-light d-none mb-3"></div>
+
+                <!-- Step 2: 資産QR -->
+                <h5 class="mb-3">Step 2: 資産QRスキャン</h5>
+                <div class="input-group mb-2">
+                    <input type="text" id="co-asset-qr" class="form-control halfwidth-input"
+                           placeholder="QRコードIDを入力 or スキャン">
+                    <button class="btn btn-outline-primary" type="button"
+                            onclick="startScan('co-asset-qr')">
+                        <i class="bi bi-qr-code-scan"></i>
+                    </button>
+                    <button class="btn btn-primary" type="button" onclick="lookupAssetForCheckout()">検索</button>
+                </div>
+                <div id="co-asset-info" class="alert alert-light d-none mb-3"></div>
+
+                <!-- 実行ボタン -->
+                <button id="btn-checkout" class="btn btn-lg btn-success w-100 mt-2" disabled
+                        onclick="doCheckout()">
+                    <i class="bi bi-check-circle me-1"></i>貸出を実行
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== 返却タブ ==================== -->
+        <div class="tab-pane fade" id="pane-checkin" role="tabpanel">
+            <div class="card p-4">
+                <h5 class="mb-3">資産QRスキャン</h5>
+                <div class="input-group mb-2">
+                    <input type="text" id="ci-asset-qr" class="form-control halfwidth-input"
+                           placeholder="QRコードIDを入力 or スキャン">
+                    <button class="btn btn-outline-primary" type="button"
+                            onclick="startScan('ci-asset-qr')">
+                        <i class="bi bi-qr-code-scan"></i>
+                    </button>
+                    <button class="btn btn-primary" type="button" onclick="lookupAssetForCheckin()">検索</button>
+                </div>
+                <div id="ci-asset-info" class="alert alert-light d-none mb-3"></div>
+
+                <button id="btn-checkin" class="btn btn-lg btn-warning w-100 mt-2" disabled
+                        onclick="doCheckin()">
+                    <i class="bi bi-box-arrow-in-left me-1"></i>返却を実行
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 結果表示 -->
+    <div id="result-area" class="mt-3 d-none">
+        <div id="result-msg" class="alert"></div>
+    </div>
+
+    <!-- QRスキャナーモーダル -->
+    <div class="modal fade" id="scannerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-qr-code-scan me-2"></i>QRスキャン</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            onclick="stopScan()"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div id="qr-reader" style="width:100%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<!-- html5-qrcode ライブラリ -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<script>
+    let html5QrCode = null;
+    let currentTargetInput = null;
+
+    // ---------- 半角変換: 全角英数→半角に自動変換 ----------
+    function toHalfWidth(str) {
+        return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, s =>
+            String.fromCharCode(s.charCodeAt(0) - 0xFEE0)
+        ).replace(/[\u3000]/g, ' ')
+         .replace(/[^\x20-\x7E]/g, '');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.halfwidth-input').forEach(input => {
+            input.setAttribute('inputmode', 'latin');
+            input.setAttribute('autocapitalize', 'off');
+            input.addEventListener('input', () => {
+                const pos = input.selectionStart;
+                const before = input.value;
+                input.value = toHalfWidth(before);
+                const diff = before.length - input.value.length;
+                input.setSelectionRange(pos - diff, pos - diff);
+            });
+            input.addEventListener('compositionend', () => {
+                input.value = toHalfWidth(input.value);
+            });
+        });
+    });
+
+    // ---------- QRスキャナー ----------
+    function startScan(targetInputId) {
+        currentTargetInput = document.getElementById(targetInputId);
+        const modal = new bootstrap.Modal(document.getElementById('scannerModal'));
+        modal.show();
+
+        html5QrCode = new Html5Qrcode("qr-reader");
+        html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText) => {
+                currentTargetInput.value = toHalfWidth(decodedText);
+                stopScan();
+                bootstrap.Modal.getInstance(document.getElementById('scannerModal')).hide();
+                if (targetInputId === 'co-emp-code') lookupEmployee();
+                else if (targetInputId === 'co-asset-qr') lookupAssetForCheckout();
+                else if (targetInputId === 'ci-asset-qr') lookupAssetForCheckin();
+            },
+            (errorMessage) => { /* ignore scan errors */ }
+        ).catch(err => {
+            document.getElementById('qr-reader').innerHTML =
+                '<div class="p-4 text-center text-danger">カメラを起動できません。手入力をお使いください。</div>';
+        });
+    }
+
+    function stopScan() {
+        if (html5QrCode) {
+            html5QrCode.stop().catch(() => {});
+            html5QrCode.clear();
+            html5QrCode = null;
+        }
+    }
+
+    // ---------- 検索 ----------
+    let checkoutReady = { emp: false, asset: false };
+
+    function lookupEmployee() {
+        const code = document.getElementById('co-emp-code').value.trim();
+        if (!code) return;
+        fetch('/api/employees/by-code/' + encodeURIComponent(code))
+            .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+            .then(data => {
+                const el = document.getElementById('co-emp-info');
+                el.classList.remove('d-none', 'alert-danger');
+                el.classList.add('alert-info');
+                el.innerHTML = '<strong>' + data.name + '</strong> (' + data.employeeCode + ')'
+                    + '<br><small>' + data.department + ' ' + data.section + '</small>';
+                checkoutReady.emp = true;
+                updateCheckoutBtn();
+                // 社員が見つかったら資産QR入力に自動フォーカス
+                document.getElementById('co-asset-qr').focus();
+            })
+            .catch(() => {
+                const el = document.getElementById('co-emp-info');
+                el.classList.remove('d-none', 'alert-info');
+                el.classList.add('alert-danger');
+                el.textContent = '社員が見つかりません';
+                checkoutReady.emp = false;
+                updateCheckoutBtn();
+            });
+    }
+
+    function lookupAssetForCheckout() {
+        const qr = document.getElementById('co-asset-qr').value.trim();
+        if (!qr) return;
+        fetch('/api/assets/by-qr/' + encodeURIComponent(qr))
+            .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+            .then(data => {
+                const el = document.getElementById('co-asset-info');
+                el.classList.remove('d-none', 'alert-danger');
+                el.classList.add('alert-info');
+                el.innerHTML = '<strong>' + data.productName + '</strong> (' + data.qrCodeId + ')'
+                    + '<br><small>ステータス: ' + data.statusDisplay + '</small>';
+                checkoutReady.asset = (data.status === 'STOCK');
+                if (data.status !== 'STOCK') {
+                    el.classList.remove('alert-info');
+                    el.classList.add('alert-warning');
+                    el.innerHTML += '<br><span class="text-danger">この資産は現在貸出できません</span>';
+                } else if (checkoutReady.emp) {
+                    // 社員・資産両方OKなら自動で貸出実行
+                    doCheckout();
+                    return;
+                }
+                updateCheckoutBtn();
+            })
+            .catch(() => {
+                const el = document.getElementById('co-asset-info');
+                el.classList.remove('d-none', 'alert-info');
+                el.classList.add('alert-danger');
+                el.textContent = '資産が見つかりません';
+                checkoutReady.asset = false;
+                updateCheckoutBtn();
+            });
+    }
+
+    function lookupAssetForCheckin() {
+        const qr = document.getElementById('ci-asset-qr').value.trim();
+        if (!qr) return;
+        fetch('/api/assets/by-qr/' + encodeURIComponent(qr))
+            .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+            .then(data => {
+                const el = document.getElementById('ci-asset-info');
+                el.classList.remove('d-none', 'alert-danger', 'alert-warning');
+                el.classList.add('alert-info');
+                el.innerHTML = '<strong>' + data.productName + '</strong> (' + data.qrCodeId + ')'
+                    + '<br><small>ステータス: ' + data.statusDisplay + '</small>';
+                const canCheckin = (data.status === 'IN_USE');
+                document.getElementById('btn-checkin').disabled = !canCheckin;
+                if (!canCheckin) {
+                    el.classList.remove('alert-info');
+                    el.classList.add('alert-warning');
+                    el.innerHTML += '<br><span class="text-danger">この資産は返却対象ではありません</span>';
+                } else {
+                    // 返却可能なら自動実行
+                    doCheckin();
+                }
+            })
+            .catch(() => {
+                const el = document.getElementById('ci-asset-info');
+                el.classList.remove('d-none', 'alert-info');
+                el.classList.add('alert-danger');
+                el.textContent = '資産が見つかりません';
+                document.getElementById('btn-checkin').disabled = true;
+            });
+    }
+
+    function updateCheckoutBtn() {
+        document.getElementById('btn-checkout').disabled =
+            !(checkoutReady.emp && checkoutReady.asset);
+    }
+
+    // ---------- 実行 ----------
+    function doCheckout() {
+        const body = {
+            employeeCode: document.getElementById('co-emp-code').value.trim(),
+            qrCodeId: document.getElementById('co-asset-qr').value.trim()
+        };
+        fetch('/api/operation/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        })
+        .then(r => r.json())
+        .then(data => showCheckoutResult(data.success, data.message))
+        .catch(() => showCheckoutResult(false, '通信エラーが発生しました'));
+    }
+
+    function doCheckin() {
+        const body = {
+            qrCodeId: document.getElementById('ci-asset-qr').value.trim()
+        };
+        fetch('/api/operation/checkin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        })
+        .then(r => r.json())
+        .then(data => showCheckinResult(data.success, data.message))
+        .catch(() => showCheckinResult(false, '通信エラーが発生しました'));
+    }
+
+    // 貸出結果: 成功時は社員情報を保持し、資産欄だけクリアして次のスキャンへ
+    function showCheckoutResult(success, message) {
+        const area = document.getElementById('result-area');
+        const msg = document.getElementById('result-msg');
+        area.classList.remove('d-none');
+        msg.className = 'alert ' + (success ? 'alert-success' : 'alert-danger');
+        msg.innerHTML = (success ? '<i class="bi bi-check-circle me-1"></i>' : '<i class="bi bi-exclamation-triangle me-1"></i>') + message;
+
+        if (success) {
+            // 社員情報は保持、資産欄のみクリアして連続スキャン可能に
+            document.getElementById('co-asset-qr').value = '';
+            document.getElementById('co-asset-info').classList.add('d-none');
+            document.getElementById('btn-checkout').disabled = true;
+            checkoutReady.asset = false;
+            document.getElementById('co-asset-qr').focus();
+        }
+    }
+
+    // 返却結果: 成功時は資産欄をクリアして次のスキャンへ
+    function showCheckinResult(success, message) {
+        const area = document.getElementById('result-area');
+        const msg = document.getElementById('result-msg');
+        area.classList.remove('d-none');
+        msg.className = 'alert ' + (success ? 'alert-success' : 'alert-danger');
+        msg.innerHTML = (success ? '<i class="bi bi-check-circle me-1"></i>' : '<i class="bi bi-exclamation-triangle me-1"></i>') + message;
+
+        if (success) {
+            document.getElementById('ci-asset-qr').value = '';
+            document.getElementById('ci-asset-info').classList.add('d-none');
+            document.getElementById('btn-checkin').disabled = true;
+            document.getElementById('ci-asset-qr').focus();
+        }
+    }
+</script>
+
+</body>
+</html>

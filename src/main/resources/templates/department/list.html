@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('部署マスタ - 資産管理')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container">
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-1"></i><span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="bi bi-building me-2"></i>部署マスタ</h2>
+        <div class="d-flex gap-2">
+            <a href="/sections" class="btn btn-outline-secondary">
+                <i class="bi bi-diagram-3 me-1"></i>課マスタ
+            </a>
+            <a href="/departments/new" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>新規登録
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th style="width:80px">ID</th>
+                    <th>部署名</th>
+                    <th style="width:100px">課の数</th>
+                    <th class="text-center" style="width:160px">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="dept : ${departments}">
+                    <td th:text="${dept.id}"></td>
+                    <td th:text="${dept.name}"></td>
+                    <td>
+                        <span class="badge bg-info" th:text="${dept.sections.size()}"></span>
+                    </td>
+                    <td class="text-center text-nowrap">
+                        <a th:href="@{/departments/{id}/edit(id=${dept.id})}"
+                           class="btn btn-sm btn-outline-primary me-1">
+                            <i class="bi bi-pencil"></i> 編集
+                        </a>
+                        <form th:action="@{/departments/{id}/delete(id=${dept.id})}"
+                              method="post" class="d-inline"
+                              onsubmit="return confirm('この部署を削除してよろしいですか？\n配下の課も削除されます。')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i> 削除
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(departments)}">
+                    <td colspan="4" class="text-center text-muted py-4">部署が登録されていません</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

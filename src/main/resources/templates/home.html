@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('ホーム - 資産管理')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container">
+    <h2 class="mb-4"><i class="bi bi-speedometer2 me-2"></i>ダッシュボード</h2>
+
+    <div class="row g-4">
+        <!-- 資産数 -->
+        <div class="col-md-4">
+            <div class="card text-center p-4">
+                <div class="fs-1 text-primary"><i class="bi bi-pc-display"></i></div>
+                <h5 class="mt-2">登録資産数</h5>
+                <p class="display-6 fw-bold" th:text="${totalAssets}">0</p>
+                <a href="/assets" class="btn btn-outline-primary btn-sm">一覧を見る</a>
+            </div>
+        </div>
+        <!-- 社員数 -->
+        <div class="col-md-4">
+            <div class="card text-center p-4">
+                <div class="fs-1 text-success"><i class="bi bi-people"></i></div>
+                <h5 class="mt-2">登録社員数</h5>
+                <p class="display-6 fw-bold" th:text="${totalEmployees}">0</p>
+                <a href="/employees" class="btn btn-outline-success btn-sm">一覧を見る</a>
+            </div>
+        </div>
+        <!-- 貸出中 -->
+        <div class="col-md-4">
+            <div class="card text-center p-4">
+                <div class="fs-1 text-warning"><i class="bi bi-arrow-left-right"></i></div>
+                <h5 class="mt-2">現在貸出中</h5>
+                <p class="display-6 fw-bold" th:text="${activeAssignments}">0</p>
+                <a href="/operation" class="btn btn-outline-warning btn-sm">スキャン画面へ</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- クイックアクション -->
+    <div class="row g-3 mt-4">
+        <div class="col-6 col-md-3">
+            <a href="/assets/new" class="btn btn-primary w-100 py-3">
+                <i class="bi bi-plus-circle d-block fs-4"></i>資産登録
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="/employees/new" class="btn btn-success w-100 py-3">
+                <i class="bi bi-person-plus d-block fs-4"></i>社員登録
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="/operation" class="btn btn-info text-white w-100 py-3">
+                <i class="bi bi-qr-code-scan d-block fs-4"></i>貸出 / 返却
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="/assets" class="btn btn-secondary w-100 py-3">
+                <i class="bi bi-list-ul d-block fs-4"></i>資産一覧
+            </a>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

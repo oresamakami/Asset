@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('課登録 - 資産管理')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container" style="max-width:540px">
+    <h2 class="mb-4">
+        <i class="bi bi-diagram-3 me-2"></i>
+        <span th:text="${section.id != null} ? '課編集' : '課登録'">課登録</span>
+    </h2>
+
+    <div class="card p-4">
+        <form th:action="${section.id != null}
+                  ? @{/sections/{id}(id=${section.id})}
+                  : @{/sections}"
+              method="post">
+
+            <div class="mb-3">
+                <label class="form-label">所属部署 <span class="text-danger">*</span></label>
+                <select class="form-select" name="departmentId" required>
+                    <option value="">-- 選択してください --</option>
+                    <option th:each="dept : ${departments}"
+                            th:value="${dept.id}"
+                            th:text="${dept.name}"
+                            th:selected="${section.department != null and section.department.id == dept.id}">
+                    </option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">課名 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="name"
+                       th:value="${section.name}" required placeholder="例: インフラ課">
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i>保存
+                </button>
+                <a href="/sections" class="btn btn-outline-secondary">キャンセル</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
