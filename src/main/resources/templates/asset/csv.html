@@ -5,12 +5,12 @@
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
 <div class="container" style="max-width:640px">
-    <h2 class="mb-4"><i class="bi bi-file-earmark-spreadsheet me-2"></i>社員CSV一括登録</h2>
+    <h2 class="mb-4"><i class="bi bi-file-earmark-spreadsheet me-2"></i>資産CSV一括登録</h2>
 
     <!-- 結果メッセージ -->
     <div th:if="${successCount != null}" class="alert alert-success">
         <i class="bi bi-check-circle me-1"></i>
-        <span th:text="${successCount}"></span> 件の社員を登録しました。
+        <span th:text="${successCount}"></span> 件の資産を登録しました。
     </div>
     <div th:if="${error != null}" class="alert alert-danger">
         <i class="bi bi-exclamation-triangle me-1"></i>
@@ -27,17 +27,25 @@
     <div class="card p-4 mb-4">
         <h5 class="mb-3">Step 1: テンプレートをダウンロード</h5>
         <p class="text-muted">
-            CSVファイルのフォーマットを確認し、テンプレートに社員情報を入力してください。
+            CSVファイルのフォーマットを確認し、テンプレートに資産情報を入力してください。<br>
+            <strong>新管理No (QRコードID)</strong> と <strong>ステータス</strong> は自動で付与されます（在庫として登録）。
         </p>
-        <a href="/employees/csv/template" class="btn btn-outline-primary">
+        <a href="/assets/csv/template" class="btn btn-outline-primary">
             <i class="bi bi-download me-1"></i>テンプレートCSVダウンロード
         </a>
 
         <div class="mt-3">
             <small class="text-muted">CSVフォーマット (UTF-8 / Shift-JIS 両対応):</small>
-            <div class="bg-light p-2 rounded mt-1">
-                <code>社員番号,氏名,部署ID,課ID</code><br>
-                <code>EMP001,山田太郎,1,1</code>
+            <div class="bg-light p-2 rounded mt-1" style="overflow-x:auto">
+                <code>旧管理No,資産種別,品名,型名,製造番号,OS,CPU,メモリ,ストレージ,スペック,購入日</code><br>
+                <code>PC-0001,PC,ThinkPad X1 Carbon,20U9CTO1WW,PF-123456,Windows 11 Pro,Core i7-1365U,16GB,512GB SSD,Wi-Fi 6E,2025-04-01</code>
+            </div>
+            <div class="mt-2">
+                <small class="text-muted">
+                    <strong>必須列:</strong> 資産種別（PC / MOBILE / 携帯）、品名<br>
+                    <strong>任意列:</strong> 旧管理No、型名〜購入日（空欄OK）<br>
+                    <strong>購入日:</strong> yyyy-MM-dd 形式（例: 2025-04-01）
+                </small>
             </div>
         </div>
     </div>
@@ -45,7 +53,7 @@
     <!-- Step 2: CSVアップロード -->
     <div class="card p-4">
         <h5 class="mb-3">Step 2: CSVファイルをアップロード</h5>
-        <form th:action="@{/employees/csv/upload}" method="post" enctype="multipart/form-data">
+        <form th:action="@{/assets/csv/upload}" method="post" enctype="multipart/form-data">
             <div class="mb-3">
                 <label class="form-label">CSVファイルを選択</label>
                 <input type="file" class="form-control" name="file"
@@ -59,8 +67,8 @@
     </div>
 
     <div class="mt-3">
-        <a href="/employees" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i>社員一覧に戻る
+        <a href="/assets" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>資産一覧に戻る
         </a>
     </div>
 </div>

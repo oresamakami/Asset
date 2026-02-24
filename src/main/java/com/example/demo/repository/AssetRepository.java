@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface AssetRepository extends JpaRepository<Asset, Long> {
     Optional<Asset> findByQrCodeId(String qrCodeId);
+    Optional<Asset> findByOldManagementCode(String oldManagementCode);
+    Optional<Asset> findFirstByModelNameAndImagePathIsNotNull(String modelName);
 }

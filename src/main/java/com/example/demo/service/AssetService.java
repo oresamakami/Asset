@@ -49,6 +49,16 @@ public class AssetService {
     }
 
     /**
+     * 同じ型名を持つ既存資産から画像パスを取得する。
+     * 見つからなければ empty。
+     */
+    public Optional<String> findImagePathByModelName(String modelName) {
+        if (modelName == null || modelName.isBlank()) return Optional.empty();
+        return assetRepository.findFirstByModelNameAndImagePathIsNotNull(modelName)
+                .map(Asset::getImagePath);
+    }
+
+    /**
      * 資産ID → 現在の貸出情報 のマップを取得 (一覧画面で使用者を表示するため)
      */
     public Map<Long, Assignment> getCurrentAssignmentMap() {

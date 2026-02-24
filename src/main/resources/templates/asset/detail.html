@@ -27,8 +27,12 @@
                         <th class="text-muted" style="width:130px">資産種別</th>
                         <td th:text="${asset.assetType.displayName}"></td>
                     </tr>
+                    <tr th:if="${asset.oldManagementCode != null}">
+                        <th class="text-muted">旧管理No</th>
+                        <td th:text="${asset.oldManagementCode}"></td>
+                    </tr>
                     <tr>
-                        <th class="text-muted">QRコードID</th>
+                        <th class="text-muted">新管理No (QR)</th>
                         <td><code th:text="${asset.qrCodeId}"></code></td>
                     </tr>
                     <tr>

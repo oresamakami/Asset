@@ -20,7 +20,11 @@ public class Asset {
     @Column(nullable = false)
     private AssetType assetType;
 
-    /** 管理用QRコードID */
+    /** 旧管理No (Excel時代の管理コード) */
+    @Column(unique = true)
+    private String oldManagementCode;
+
+    /** 管理用QRコードID (新管理No) */
     @Column(nullable = false, unique = true)
     private String qrCodeId;
 

@@ -7,9 +7,14 @@
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2><i class="bi bi-pc-display me-2"></i>資産一覧</h2>
-        <a href="/assets/new" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i>新規登録
-        </a>
+        <div class="d-flex gap-2">
+            <a href="/assets/csv" class="btn btn-outline-success">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i>CSV一括登録
+            </a>
+            <a href="/assets/new" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>新規登録
+            </a>
+        </div>
     </div>
 
     <!-- 検索バー -->
@@ -20,7 +25,7 @@
                     <div class="input-group input-group-sm">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                         <input type="text" id="searchInput" class="form-control"
-                               placeholder="QRコードID / 品名 / 型名 / 製造番号で検索"
+                               placeholder="旧管理No / QRコードID / 品名 / 型名 / 製造番号で検索"
                                oninput="filterAssets()">
                     </div>
                 </div>
@@ -54,7 +59,8 @@
                     <tr>
                         <th style="width:50px"></th>
                         <th>種別</th>
-                        <th>QRコードID</th>
+                        <th>旧管理No</th>
+                        <th>新管理No (QR)</th>
                         <th>品名</th>
                         <th>型名</th>
                         <th>製造番号</th>
@@ -69,7 +75,8 @@
                 </thead>
                 <tbody>
                     <tr th:each="asset : ${assets}" data-searchable="true"
-                        th:attr="data-qr=${asset.qrCodeId},
+                        th:attr="data-oldcode=${asset.oldManagementCode},
+                                 data-qr=${asset.qrCodeId},
                                  data-product=${asset.productName},
                                  data-model=${asset.modelName},
                                  data-serial=${asset.serialNumber},
@@ -84,6 +91,7 @@
                         <td>
                             <span th:text="${asset.assetType.displayName}"></span>
                         </td>
+                        <td><small th:text="${asset.oldManagementCode}"></small></td>
                         <td><code th:text="${asset.qrCodeId}"></code></td>
                         <td th:text="${asset.productName}"></td>
                         <td th:text="${asset.modelName}"></td>
@@ -132,7 +140,7 @@
                         </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(assets)}">
-                        <td colspan="13" class="text-center text-muted py-4">資産が登録されていません</td>
+                        <td colspan="14" class="text-center text-muted py-4">資産が登録されていません</td>
                     </tr>
                 </tbody>
             </table>
@@ -151,6 +159,7 @@
         let visibleCount = 0;
 
         rows.forEach(row => {
+            const oldCode = (row.getAttribute('data-oldcode') || '').toLowerCase();
             const qrCode = (row.getAttribute('data-qr') || '').toLowerCase();
             const productName = (row.getAttribute('data-product') || '').toLowerCase();
             const modelName = (row.getAttribute('data-model') || '').toLowerCase();
@@ -159,6 +168,7 @@
             const assetType = row.getAttribute('data-type') || '';
 
             const matchesKeyword = !keyword ||
+                oldCode.includes(keyword) ||
                 qrCode.includes(keyword) ||
                 productName.includes(keyword) ||
                 modelName.includes(keyword) ||

@@ -27,9 +27,17 @@
                     </select>
                 </div>
 
-                <!-- QRコードID (自動発行) -->
+                <!-- 旧管理No -->
                 <div class="col-md-6">
-                    <label class="form-label">管理用QRコードID <span class="badge bg-secondary ms-1">自動発行</span></label>
+                    <label class="form-label">旧管理No <span class="badge bg-info ms-1">Excel時代</span></label>
+                    <input type="text" class="form-control" th:field="*{oldManagementCode}"
+                           placeholder="例: PC-0001">
+                    <div class="form-text">Excel管理時代のコードがあれば入力</div>
+                </div>
+
+                <!-- QRコードID (自動発行 = 新管理No) -->
+                <div class="col-md-6">
+                    <label class="form-label">新管理No (QRコードID) <span class="badge bg-secondary ms-1">自動発行</span></label>
                     <input type="text" class="form-control" th:field="*{qrCodeId}"
                            th:readonly="${asset.id == null}" readonly
                            style="background-color: #e9ecef;">
@@ -47,7 +55,10 @@
                 <div class="col-md-6">
                     <label class="form-label">型名</label>
                     <input type="text" class="form-control" th:field="*{modelName}"
-                           placeholder="例: 20U9CTO1WW">
+                           placeholder="例: 20U9CTO1WW" id="modelNameInput">
+                    <div id="shared-image-hint" class="form-text text-success d-none">
+                        <i class="bi bi-image me-1"></i>同じ型名の画像が見つかりました（自動で適用されます）
+                    </div>
                 </div>
 
                 <!-- 製造番号 -->
@@ -111,13 +122,19 @@
                 <div class="col-12">
                     <label class="form-label">製品画像</label>
                     <input type="file" class="form-control" name="imageFile"
-                           accept="image/*">
-                    <div class="form-text">JPEG, PNG 等の画像ファイル (最大10MB)</div>
-                    <!-- 既存画像プレビュー -->
-                    <div th:if="${asset.imagePath != null}" class="mt-2">
-                        <small class="text-muted">現在の画像:</small>
+                           accept="image/*" id="imageFileInput">
+                    <div class="form-text">
+                        JPEG, PNG 等の画像ファイル (最大10MB)<br>
+                        <small class="text-muted">未選択の場合、同じ型名の既存画像が自動で適用されます</small>
+                    </div>
+                    <!-- 既存画像 or 共有画像プレビュー -->
+                    <div id="image-preview" class="mt-2"
+                         th:classappend="${asset.imagePath == null} ? 'd-none' : ''">
+                        <small id="image-preview-label" class="text-muted"
+                               th:text="${asset.imagePath != null} ? '現在の画像:' : ''"></small>
                         <div class="mt-1">
-                            <img th:src="@{'/uploads/' + ${asset.imagePath}}"
+                            <img id="image-preview-img"
+                                 th:src="${asset.imagePath != null} ? @{'/uploads/' + ${asset.imagePath}} : ''"
                                  alt="製品画像" class="img-thumbnail" style="max-height:120px">
                         </div>
                     </div>
@@ -135,5 +152,67 @@
 </div>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script>
+    (function() {
+        const modelInput = document.getElementById('modelNameInput');
+        const hint = document.getElementById('shared-image-hint');
+        const preview = document.getElementById('image-preview');
+        const previewLabel = document.getElementById('image-preview-label');
+        const previewImg = document.getElementById('image-preview-img');
+        const imageFileInput = document.getElementById('imageFileInput');
+        let debounceTimer = null;
+        let hasOwnImage = previewImg.getAttribute('src') !== '';
+
+        modelInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(lookupSharedImage, 400);
+        });
+
+        imageFileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                hasOwnImage = true;
+                hint.classList.add('d-none');
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewLabel.textContent = '選択した画像:';
+                    preview.classList.remove('d-none');
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        function lookupSharedImage() {
+            if (hasOwnImage) return;
+            const modelName = modelInput.value.trim();
+            if (!modelName) {
+                hint.classList.add('d-none');
+                preview.classList.add('d-none');
+                return;
+            }
+            fetch('/assets/api/image-by-model?modelName=' + encodeURIComponent(modelName))
+                .then(r => r.json())
+                .then(data => {
+                    if (data.imagePath) {
+                        hint.classList.remove('d-none');
+                        previewImg.src = '/uploads/' + data.imagePath;
+                        previewLabel.textContent = '同じ型名の共有画像:';
+                        preview.classList.remove('d-none');
+                    } else {
+                        hint.classList.add('d-none');
+                        if (!hasOwnImage) {
+                            preview.classList.add('d-none');
+                        }
+                    }
+                })
+                .catch(() => hint.classList.add('d-none'));
+        }
+
+        if (modelInput.value.trim() && !hasOwnImage) {
+            lookupSharedImage();
+        }
+    })();
+</script>
 </body>
 </html>

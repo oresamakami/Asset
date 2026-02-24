@@ -137,7 +137,7 @@ public class EmployeeController {
     @GetMapping("/csv/template")
     public ResponseEntity<byte[]> downloadTemplate() {
         byte[] bom = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
-        byte[] csv = csvService.getCsvTemplate().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] csv = csvService.getEmployeeCsvTemplate().getBytes(java.nio.charset.StandardCharsets.UTF_8);
         byte[] combined = new byte[bom.length + csv.length];
         System.arraycopy(bom, 0, combined, 0, bom.length);
         System.arraycopy(csv, 0, combined, bom.length, csv.length);
